@@ -1,0 +1,65 @@
+name: Daily Mandi Data Fetch
+
+on:
+  schedule:
+    - cron: '30 2 * * *'
+  workflow_dispatch:
+
+jobs:
+  fetch-data:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          
+      - name: Install dependencies
+        run: pip install requests pandas
+        
+      - name: Fetch mandi data
+        run: |
+          python -c "
+          import requests
+          import pandas as pd
+          from datetime import datetime, timedelta
+
+          API_KEY = '579b464db66ec23bdd000001cdd3946e44ce4aad7209ff7b23ac571b'
+          url = 'https://api.data.gov.in/resource/9ef84268-d588-465a-a308-a864a43d0070'
+          
+          all_records = []
+          crops = ['Wheat', 'Maize', 'Soyabean', 'Gram']
+          
+          for crop in crops:
+              params = {
+                  'api-key': API_KEY,
+                  'format': 'json',
+                  'limit': '500',
+                  'filters[state]': 'Madhya Pradesh',
+                  'filters[commodity]': crop
+              }
+              try:
+                  r = requests.get(url, params=params, timeout=60)
+                  if r.status_code == 200:
+                      data = r.json()
+                      records = data.get('records', [])
+                      all_records.extend(records)
+                      print(f'{crop}: {len(records)} records')
+              except Exception as e:
+                  print(f'Error: {e}')
+          
+          if all_records:
+              df = pd.DataFrame(all_records)
+              df.to_csv('data/live_prices.csv', index=False)
+              print(f'Saved {len(df)} records')
+          "
+          
+      - name: Commit and push data
+        run: |
+          git config --global user.email "action@github.com"
+          git config --global user.name "GitHub Action"
+          git add data/
+          git diff --quiet && git diff --staged --quiet || git commit -m "Auto update mandi data"
+          git push
