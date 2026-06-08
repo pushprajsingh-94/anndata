@@ -11,7 +11,7 @@ district = st.selectbox("Select Your District", ["Hoshangabad", "Indore", "Bhopa
 
 if st.button("Get My Advisory"):
     response = requests.get(
-        f"http://127.0.0.1:8000/advisory?crop={crop}&district={district}"
+        f"https://anndata-xigg.onrender.com/advisory?crop={crop}&district={district}"
     )
     data = response.json()
 
@@ -43,7 +43,7 @@ if st.button("Get My Advisory"):
 
     st.subheader("📈 14-Day Price Prediction")
     prediction = predict_prices(crop, data["best_mandi"])
-    
+
     if prediction:
         fig2 = go.Figure(go.Scatter(
             x=prediction["dates"],
